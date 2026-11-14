@@ -373,22 +373,40 @@ function isLand(lat, lon) {
     markers.push(m);
   });
 
-  // the furthest point from home: a dashed arc from Chicago to Istanbul, lifted above the surface
-  (function () {
-    const a = latLonToVec(41.88, -87.63, 1).normalize(), b = latLonToVec(41.01, 28.98, 1).normalize();
-    const om = Math.acos(THREE.MathUtils.clamp(a.dot(b), -1, 1)), pts = [];
-    for (let k = 0; k <= 96; k++) {
-      const t = k / 96, s1 = Math.sin((1 - t) * om) / Math.sin(om), s2 = Math.sin(t * om) / Math.sin(om);
-      const d = a.clone().multiplyScalar(s1).add(b.clone().multiplyScalar(s2)).normalize();
-      pts.push(d.multiplyScalar(1.02 + 0.22 * Math.sin(Math.PI * t)));
-    }
-    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
-      new THREE.LineDashedMaterial({ color: 0xffffff, dashSize: 0.03, gapSize: 0.02, transparent: true, opacity: 0.85 }));
-    line.computeLineDistances();
-    globe.add(line);
-  })();
-
-  // the travel route: a dashed arc between each place marker and the next, in the order of PLACES
+  // the travel route: stops in trip order, joined by dashed arcs, with a dot at each stop
+  const ROUTE = [
+    { name: 'ORD', lat: 41.98, lon: -87.9 },
+    { name: 'Barcelona', lat: 41.39, lon: 2.17 },
+    { name: 'Andorra', lat: 42.51, lon: 1.52 },
+    { name: 'Barcelona', lat: 41.39, lon: 2.17 },
+    { name: 'Hanover', lat: 52.37, lon: 9.73 },
+    { name: 'Hamburg', lat: 53.55, lon: 9.99 },
+    { name: 'Dusseldorf', lat: 51.23, lon: 6.78 },
+    { name: 'Krakow', lat: 50.06, lon: 19.94 },
+    { name: 'Zakopane', lat: 49.3, lon: 19.95 },
+    { name: 'Warsaw', lat: 52.23, lon: 21.01 },
+    { name: 'Vilnius', lat: 54.69, lon: 25.28 },
+    { name: 'Riga', lat: 56.95, lon: 24.11 },
+    { name: 'Jurmala', lat: 56.97, lon: 23.78 },
+    { name: 'Parnu', lat: 58.39, lon: 24.5 },
+    { name: 'Tallinn', lat: 59.44, lon: 24.75 },
+    { name: 'Helsinki', lat: 60.17, lon: 24.94 },
+    { name: 'Nuuksio', lat: 60.3, lon: 24.55 },
+    { name: 'Turku', lat: 60.45, lon: 22.27 },
+    { name: 'Tampere', lat: 61.5, lon: 23.76 },
+    { name: 'Vienna', lat: 48.21, lon: 16.37 },
+    { name: 'Ljubljana', lat: 46.06, lon: 14.51 },
+    { name: 'Bled', lat: 46.37, lon: 14.11 },
+    { name: 'Rijeka', lat: 45.33, lon: 14.44 },
+    { name: 'Split', lat: 43.51, lon: 16.44 },
+    { name: 'Dubrovnik', lat: 42.65, lon: 18.09 },
+    { name: 'Kotor', lat: 42.42, lon: 18.77 },
+    { name: 'Istanbul', lat: 41.01, lon: 28.98 },
+    { name: 'Dublin', lat: 53.35, lon: -6.26 },
+    { name: 'London', lat: 51.51, lon: -0.13 },
+    { name: 'Paris', lat: 48.86, lon: 2.35 },
+    { name: 'Chicago', lat: 41.88, lon: -87.63 }
+  ];
   (function () {
     function arc(lat1, lon1, lat2, lon2) {
       const a = latLonToVec(lat1, lon1, 1).normalize(), b = latLonToVec(lat2, lon2, 1).normalize();
@@ -404,7 +422,13 @@ function isLand(lat, lon) {
       line.computeLineDistances();
       globe.add(line);
     }
-    for (let i = 0; i + 1 < PLACES.length; i++) arc(PLACES[i].lat, PLACES[i].lon, PLACES[i + 1].lat, PLACES[i + 1].lon);
+    const dotGeo = new THREE.SphereGeometry(0.012, 8, 6), dotMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    ROUTE.forEach(function (s, i) {
+      const dot = new THREE.Mesh(dotGeo, dotMat);
+      dot.position.copy(latLonToVec(s.lat, s.lon, 1.02));
+      globe.add(dot);
+      if (i + 1 < ROUTE.length) arc(s.lat, s.lon, ROUTE[i + 1].lat, ROUTE[i + 1].lon);
+    });
   })();
 
   // one photo card per place, moved on screen to follow its marker
