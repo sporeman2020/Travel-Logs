@@ -415,17 +415,25 @@ function isLand(lat, lon) {
       for (let k = 0; k <= 64; k++) {
         const t = k / 64, s1 = Math.sin((1 - t) * om) / Math.sin(om), s2 = Math.sin(t * om) / Math.sin(om);
         const d = a.clone().multiplyScalar(s1).add(b.clone().multiplyScalar(s2)).normalize();
-        pts.push(d.multiplyScalar(1.02 + 0.12 * Math.sin(Math.PI * t)));
+        pts.push(d.multiplyScalar(1.02 + 0.02 * Math.sin(Math.PI * t)));
       }
       const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
         new THREE.LineDashedMaterial({ color: 0xffffff, dashSize: 0.03, gapSize: 0.02, transparent: true, opacity: 0.85 }));
       line.computeLineDistances();
       globe.add(line);
     }
-    const dotGeo = new THREE.SphereGeometry(0.012, 8, 6), dotMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    // each stop uses the same look as the .pin ring: white border, grey centre, soft shadow
+    const pc = document.createElement("canvas"); pc.width = pc.height = 64;
+    const px = pc.getContext("2d");
+    px.shadowColor = "rgba(0,0,0,.5)"; px.shadowBlur = 8;
+    px.beginPath(); px.arc(32, 32, 26, 0, Math.PI * 2); px.fillStyle = "#fff"; px.fill();
+    px.shadowBlur = 0;
+    px.beginPath(); px.arc(32, 32, 16, 0, Math.PI * 2); px.fillStyle = "#7d8288"; px.fill();
+    const pinTex = new THREE.CanvasTexture(pc);
     ROUTE.forEach(function (s, i) {
-      const dot = new THREE.Mesh(dotGeo, dotMat);
-      dot.position.copy(latLonToVec(s.lat, s.lon, 1.02));
+      const dot = new THREE.Sprite(new THREE.SpriteMaterial({ map: pinTex, transparent: true, depthTest: true }));
+      dot.scale.set(0.05, 0.05, 1);
+      dot.position.copy(latLonToVec(s.lat, s.lon, 1.03));
       globe.add(dot);
       if (i + 1 < ROUTE.length) arc(s.lat, s.lon, ROUTE[i + 1].lat, ROUTE[i + 1].lon);
     });
