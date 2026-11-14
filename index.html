@@ -437,7 +437,31 @@ function isLand(lat, lon) {
       globe.add(dot);
       if (i + 1 < ROUTE.length) arc(s.lat, s.lon, ROUTE[i + 1].lat, ROUTE[i + 1].lon);
     });
+
+    // a placeholder dropdown for each stop: pick a stop to turn the globe to it and open its card
+    const box = document.createElement("div");
+    box.style.cssText = "position:fixed;left:20px;bottom:44px;z-index:6;font:12px/1.4 sans-serif;color:#fff;background:rgba(10,20,30,.72);padding:10px 12px;border-radius:6px;width:220px;";
+    const sel = document.createElement("select");
+    sel.style.cssText = "width:100%;background:#1c2a36;color:#fff;border:1px solid #7d8288;padding:4px;font:12px sans-serif;";
+    const ph = document.createElement("option"); ph.value = ""; ph.textContent = "Choose a stop..."; ph.disabled = true; ph.selected = true; sel.appendChild(ph);
+    ROUTE.forEach(function (s, i) { const o = document.createElement("option"); o.value = String(i); o.textContent = (i + 1) + ". " + s.name; sel.appendChild(o); });
+    const card = document.createElement("div"); card.style.cssText = "margin-top:8px;opacity:.9;"; card.textContent = "Pick a stop to see its details.";
+    const detail = document.createElement("select");
+    detail.style.cssText = "width:100%;margin-top:6px;background:#1c2a36;color:#fff;border:1px solid #7d8288;padding:4px;font:12px sans-serif;";
+    const dph = document.createElement("option"); dph.textContent = "Add details..."; dph.selected = true; detail.appendChild(dph);
+    detail.style.display = "none";
+    box.appendChild(sel); box.appendChild(card); box.appendChild(detail);
+    document.body.appendChild(box);
+    sel.addEventListener("change", function () {
+      const s = ROUTE[Number(sel.value)], v = latLonToVec(s.lat, s.lon, 1);
+      globe.rotation.y = Math.atan2(-v.x, v.z);
+      card.textContent = s.name + ": placeholder details for this stop.";
+      detail.style.display = "block";
+    });
   })();
+
+  // a flat solid light-blue disc behind the globe, for the atmosphere
+  scene.add(new THREE.Mesh(new THREE.CircleGeometry(1.3, 96), new THREE.MeshBasicMaterial({ color: 0xa8d8f0 })).translateZ(-0.6));
 
   // one photo card per place, moved on screen to follow its marker
   const globeBox = document.getElementById('globeBox');
