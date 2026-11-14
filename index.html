@@ -388,6 +388,25 @@ function isLand(lat, lon) {
     globe.add(line);
   })();
 
+  // the travel route: a dashed arc between each place marker and the next, in the order of PLACES
+  (function () {
+    function arc(lat1, lon1, lat2, lon2) {
+      const a = latLonToVec(lat1, lon1, 1).normalize(), b = latLonToVec(lat2, lon2, 1).normalize();
+      const om = Math.acos(THREE.MathUtils.clamp(a.dot(b), -1, 1)), pts = [];
+      if (om < 1e-4) return;
+      for (let k = 0; k <= 64; k++) {
+        const t = k / 64, s1 = Math.sin((1 - t) * om) / Math.sin(om), s2 = Math.sin(t * om) / Math.sin(om);
+        const d = a.clone().multiplyScalar(s1).add(b.clone().multiplyScalar(s2)).normalize();
+        pts.push(d.multiplyScalar(1.02 + 0.12 * Math.sin(Math.PI * t)));
+      }
+      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+        new THREE.LineDashedMaterial({ color: 0xffffff, dashSize: 0.03, gapSize: 0.02, transparent: true, opacity: 0.85 }));
+      line.computeLineDistances();
+      globe.add(line);
+    }
+    for (let i = 0; i + 1 < PLACES.length; i++) arc(PLACES[i].lat, PLACES[i].lon, PLACES[i + 1].lat, PLACES[i + 1].lon);
+  })();
+
   // one photo card per place, moved on screen to follow its marker
   const globeBox = document.getElementById('globeBox');
   const pins = PLACES.map((p, i) => {
