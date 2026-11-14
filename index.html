@@ -373,6 +373,21 @@ function isLand(lat, lon) {
     markers.push(m);
   });
 
+  // the furthest point from home: a dashed arc from Chicago to Istanbul, lifted above the surface
+  (function () {
+    const a = latLonToVec(41.88, -87.63, 1).normalize(), b = latLonToVec(41.01, 28.98, 1).normalize();
+    const om = Math.acos(THREE.MathUtils.clamp(a.dot(b), -1, 1)), pts = [];
+    for (let k = 0; k <= 96; k++) {
+      const t = k / 96, s1 = Math.sin((1 - t) * om) / Math.sin(om), s2 = Math.sin(t * om) / Math.sin(om);
+      const d = a.clone().multiplyScalar(s1).add(b.clone().multiplyScalar(s2)).normalize();
+      pts.push(d.multiplyScalar(1.02 + 0.22 * Math.sin(Math.PI * t)));
+    }
+    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+      new THREE.LineDashedMaterial({ color: 0xffffff, dashSize: 0.03, gapSize: 0.02, transparent: true, opacity: 0.85 }));
+    line.computeLineDistances();
+    globe.add(line);
+  })();
+
   // one photo card per place, moved on screen to follow its marker
   const globeBox = document.getElementById('globeBox');
   const pins = PLACES.map((p, i) => {
